@@ -8,7 +8,7 @@ gsap.registerPlugin(ScrollTrigger);
 
 const CARD_WIDTH = 3;
 const CARD_HEIGHT = 3.75;
-const CARD_DEPTH = 0.08;
+const CARD_DEPTH = 0.06;
 
 const CARDS_ENTER_END = 100;
 const CARD_FLIP_TRIGGER = 200;
@@ -16,17 +16,19 @@ const CARD_DISMISS_START = 300;
 const CARD_DISMISS_DURATION = 100;
 const STICKY_CARD_COUNT = 4;
 const TOTAL_SCROLL_SVH =
-  CARD_DISMISS_START + STICKY_CARD_COUNT * CARD_DISMISS_DURATION;
+    CARD_DISMISS_START + STICKY_CARD_COUNT * CARD_DISMISS_DURATION;
 
 const cardFlipTiltAngles = [-10, -20, -5, 10];
 const cardDismissTiltAngles = [-50, -60, -45, 50];
 const cardColors = ["#f0fd00", "#dfebe0", "#8c26fd", "#9bfd40"];
 const cardTextColors = ["#0f0f0f", "#0f0f0f", "#ffffff", "#0f0f0f"];
 const backCardPositions = [
-  { x: -0.05, z: -0.05 },
-  { x: 0.03, z: -0.08 },
-  { x: -0.02, z: -0.11 },
-  { x: 0.04, z: -0.14 },
+  // Z 间距必须大于卡片厚度，避免翻转时实体几何互相穿模。
+  // 数组顺序同时就是视觉层级：0 最上层，3 最下层。
+  { x: -0.05, z: -0.08 },
+  { x: 0.03, z: -0.18 },
+  { x: -0.02, z: -0.28 },
+  { x: 0.04, z: -0.38 },
 ];
 
 const degToRad = THREE.MathUtils.degToRad;
@@ -109,12 +111,12 @@ function drawIcon(ctx, type, x, y, size, color) {
     ctx.beginPath();
     ctx.arc(0, 0, size * 0.32, Math.PI * 0.25, Math.PI * 1.75, false);
     ctx.bezierCurveTo(
-      -size * 0.02,
-      size * 0.14,
-      size * 0.08,
-      -size * 0.18,
-      size * 0.23,
-      -size * 0.24
+        -size * 0.02,
+        size * 0.14,
+        size * 0.08,
+        -size * 0.18,
+        size * 0.23,
+        -size * 0.24
     );
     ctx.closePath();
     ctx.fill();
@@ -124,14 +126,14 @@ function drawIcon(ctx, type, x, y, size, color) {
 }
 
 function createCardTexture({
-  background,
-  foreground,
-  title,
-  subtitle,
-  index,
-  icon,
-  back = false,
-}) {
+                             background,
+                             foreground,
+                             title,
+                             subtitle,
+                             index,
+                             icon,
+                             back = false,
+                           }) {
   const canvas = document.createElement("canvas");
   canvas.width = 1024;
   canvas.height = 1280;
@@ -251,11 +253,11 @@ function createCard({ background, foreground, title, subtitle, index, icon, z = 
 
   const sideColor = new THREE.Color(background).multiplyScalar(0.82);
   const sideMaterials = Array.from({ length: 4 }, () =>
-    new THREE.MeshStandardMaterial({
-      color: sideColor,
-      roughness: 0.78,
-      metalness: 0,
-    })
+      new THREE.MeshStandardMaterial({
+        color: sideColor,
+        roughness: 0.78,
+        metalness: 0,
+      })
   );
 
   const frontMaterial = new THREE.MeshPhysicalMaterial({
@@ -343,7 +345,7 @@ function init() {
     subtitle: "Start here",
     index: "00",
     icon: "chevron",
-    z: 0.08,
+    z: 0.12,
   });
 
   const labels = ["BREATHE", "MOVE", "NOTICE", "REST"];
@@ -374,7 +376,7 @@ function init() {
   function updateCardScale() {
     const distance = Math.abs(camera.position.z - cardsGroup.position.z);
     const visibleHeight =
-      2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * distance;
+        2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * distance;
     const visibleWidth = visibleHeight * camera.aspect;
 
     const widthScale = (visibleWidth * 0.82) / CARD_WIDTH;
@@ -432,17 +434,22 @@ function init() {
       },
     });
 
-    flipTimeline.to(frontCard.rotation, { y: Math.PI }, 0);
-    flipTimeline.to(frontCard.position, { z: -0.32 }, 0);
+    // 前卡只做翻转，不再穿过后方实体卡片。
+    // 到侧面对镜头时隐藏，视觉上等同于“翻过去露出后面的牌”，
+    // 同时彻底避免黄色前卡与灰色/其他卡片在同一空间交叉闪烁。
+    flipTimeline.to(frontCard.rotation, { y: Math.PI / 2 }, 0);
+    flipTimeline.call(() => {
+      frontCard.visible = false;
+    }, [], 0.32);
 
     backCards.forEach((card, i) => {
       flipTimeline.to(
-        card.rotation,
-        {
-          y: 0,
-          z: degToRad(cardFlipTiltAngles[i]),
-        },
-        0
+          card.rotation,
+          {
+            y: 0,
+            z: degToRad(cardFlipTiltAngles[i]),
+          },
+          0
       );
     });
   }
@@ -458,8 +465,14 @@ function init() {
       },
     });
 
-    flipTimeline.to(frontCard.rotation, { y: 0 }, 0);
-    flipTimeline.to(frontCard.position, { z: 0.08 }, 0);
+    frontCard.visible = false;
+    frontCard.rotation.y = Math.PI / 2;
+
+    // 返回时先收起后方卡片，再从侧面把前卡翻回正面。
+    flipTimeline.call(() => {
+      frontCard.visible = true;
+    }, [], 0.18);
+    flipTimeline.to(frontCard.rotation, { y: 0 }, 0.18);
 
     backCards.forEach((card) => {
       flipTimeline.to(card.rotation, { y: -Math.PI, z: 0 }, 0);
@@ -480,9 +493,9 @@ function init() {
 
       onUpdate: ({ progress }) => {
         const enterProgress = clamp(
-          0,
-          1,
-          mapRange(0, svhToProgress(CARDS_ENTER_END), 0, 1, progress)
+            0,
+            1,
+            mapRange(0, svhToProgress(CARDS_ENTER_END), 0, 1, progress)
         );
 
         cardsGroup.position.y = mapRange(0, 1, -1.5, 0, enterProgress);
@@ -500,12 +513,13 @@ function init() {
         }
 
         backCards.forEach((card, i) => {
-          const dismissOrder = STICKY_CARD_COUNT - 1 - i;
+          // i=0 是视觉最上层，因此直接按数组顺序依次抽出。
+          const dismissOrder = i;
           const dismissStart = svhToProgress(
-            CARD_DISMISS_START + dismissOrder * CARD_DISMISS_DURATION
+              CARD_DISMISS_START + dismissOrder * CARD_DISMISS_DURATION
           );
           const dismissEnd = svhToProgress(
-            CARD_DISMISS_START + (dismissOrder + 1) * CARD_DISMISS_DURATION
+              CARD_DISMISS_START + (dismissOrder + 1) * CARD_DISMISS_DURATION
           );
 
           if (progress <= flipThreshold) {
@@ -515,23 +529,23 @@ function init() {
           }
 
           const dismissProgress = clamp(
-            0,
-            1,
-            mapRange(dismissStart, dismissEnd, 0, 1, progress)
+              0,
+              1,
+              mapRange(dismissStart, dismissEnd, 0, 1, progress)
           );
 
           card.position.y = THREE.MathUtils.lerp(0, 4.5, dismissProgress);
           card.position.x = THREE.MathUtils.lerp(
-            backCardPositions[i].x,
-            backCardPositions[i].x + (i % 2 === 0 ? -0.24 : 0.24),
-            dismissProgress
+              backCardPositions[i].x,
+              backCardPositions[i].x + (i % 2 === 0 ? -0.24 : 0.24),
+              dismissProgress
           );
 
           if (dismissProgress > 0 || (!isFlipAnimating && progress >= dismissThreshold)) {
             card.rotation.z = THREE.MathUtils.lerp(
-              degToRad(cardFlipTiltAngles[i]),
-              degToRad(cardDismissTiltAngles[i]),
-              dismissProgress
+                degToRad(cardFlipTiltAngles[i]),
+                degToRad(cardDismissTiltAngles[i]),
+                dismissProgress
             );
           } else if (!isFlipAnimating) {
             card.rotation.z = degToRad(cardFlipTiltAngles[i]);

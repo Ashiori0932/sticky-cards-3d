@@ -47,8 +47,8 @@ section {
 
 .hero {
   background:
-    radial-gradient(circle at 50% 44%, rgba(255,255,255,0.92), transparent 34%),
-    var(--base-200);
+          radial-gradient(circle at 50% 44%, rgba(255,255,255,0.92), transparent 34%),
+          var(--base-200);
   color: var(--base-800);
   isolation: isolate;
 }
@@ -61,8 +61,8 @@ section {
   pointer-events: none;
   opacity: 0.24;
   background-image:
-    linear-gradient(rgba(15, 15, 15, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(15, 15, 15, 0.035) 1px, transparent 1px);
+          linear-gradient(rgba(15, 15, 15, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(15, 15, 15, 0.035) 1px, transparent 1px);
   background-size: 64px 64px;
   mask-image: radial-gradient(circle at center, #000 10%, transparent 72%);
 }
@@ -72,8 +72,9 @@ section {
   inset: 0;
   z-index: 2;
   display: grid;
-  place-items: center;
-  padding: 2rem;
+  justify-items: center;
+  align-items: start;
+  padding: clamp(3.5rem, 9svh, 7rem) 2rem 2rem;
   pointer-events: none;
 }
 
@@ -88,7 +89,7 @@ section {
 }
 
 .hero-content h1 {
-  width: min(1000px, 72%);
+  width: min(1000px, 76%);
   font-size: clamp(3rem, 5vw, 7rem);
   text-align: center;
 }
@@ -184,8 +185,7 @@ p {
 
 @media (max-width: 640px) {
   .hero-content {
-    align-items: start;
-    padding-top: 11svh;
+    padding-top: 8svh;
   }
 
   .hero-content h1 {
