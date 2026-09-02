@@ -1,0 +1,210 @@
+@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap");
+
+:root {
+  --base-100: #fff;
+  --base-200: #fbfff2;
+  --base-300: #dfebe0;
+  --base-400: #f0fd00;
+  --base-500: #dfebe0;
+  --base-600: #8c26fd;
+  --base-700: #9bfd40;
+  --base-800: #0f0f0f;
+  font-family: "DM Sans", sans-serif;
+  color: var(--base-800);
+  background: var(--base-200);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100%;
+  background: var(--base-200);
+}
+
+body {
+  overflow-x: hidden;
+}
+
+canvas {
+  display: block;
+}
+
+section {
+  position: relative;
+  width: 100%;
+  height: 100svh;
+  overflow: hidden;
+}
+
+.hero {
+  background:
+    radial-gradient(circle at 50% 44%, rgba(255,255,255,0.92), transparent 34%),
+    var(--base-200);
+  color: var(--base-800);
+  isolation: isolate;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.24;
+  background-image:
+    linear-gradient(rgba(15, 15, 15, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 15, 15, 0.035) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(circle at center, #000 10%, transparent 72%);
+}
+
+.hero-content {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  pointer-events: none;
+}
+
+.hero-content h1,
+.about h3 {
+  margin: 0;
+  font-family: "Barlow Condensed", sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  line-height: 0.85;
+  letter-spacing: -0.025em;
+}
+
+.hero-content h1 {
+  width: min(1000px, 72%);
+  font-size: clamp(3rem, 5vw, 7rem);
+  text-align: center;
+}
+
+.about {
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  background: var(--base-300);
+  color: var(--base-800);
+}
+
+.about h3 {
+  width: min(1100px, 76%);
+  font-size: clamp(2rem, 3vw, 5rem);
+  text-align: center;
+}
+
+.outro {
+  display: grid;
+  place-items: center;
+  background: var(--base-800);
+  color: var(--base-200);
+}
+
+.outro p {
+  margin: 0;
+  font-family: "Barlow Condensed", sans-serif;
+  font-size: clamp(1.8rem, 4vw, 5rem);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+
+p {
+  font-size: 1.125rem;
+  font-weight: 450;
+  line-height: 1.1;
+}
+
+.three-container {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.three-container canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.scroll-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 1.5rem;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  transform: translateX(-50%);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  pointer-events: none;
+}
+
+.scroll-line {
+  display: block;
+  width: 1px;
+  height: 40px;
+  background: currentColor;
+  opacity: 0.55;
+}
+
+.webgl-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+@media (max-width: 1000px) {
+  .hero-content h1,
+  .about h3 {
+    width: 85%;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-content {
+    align-items: start;
+    padding-top: 11svh;
+  }
+
+  .hero-content h1 {
+    width: 92%;
+    font-size: clamp(3rem, 15vw, 5.2rem);
+  }
+
+  .about h3 {
+    width: 92%;
+    font-size: clamp(2.4rem, 11vw, 4rem);
+  }
+
+  .scroll-hint {
+    bottom: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-hint {
+    display: none;
+  }
+}
