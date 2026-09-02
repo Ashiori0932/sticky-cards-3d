@@ -72,14 +72,12 @@ section {
   inset: 0;
   z-index: 2;
   display: grid;
-  justify-items: center;
-  align-items: start;
+  place-items: center;
   padding: clamp(3.5rem, 9svh, 7rem) 2rem 2rem;
   pointer-events: none;
 }
 
-.hero-content h1,
-.about h3 {
+.hero-content h1{
   margin: 0;
   font-family: "Barlow Condensed", sans-serif;
   font-weight: 900;
@@ -92,35 +90,6 @@ section {
   width: min(1000px, 76%);
   font-size: clamp(3rem, 5vw, 7rem);
   text-align: center;
-}
-
-.about {
-  display: grid;
-  place-items: center;
-  padding: 2rem;
-  background: var(--base-300);
-  color: var(--base-800);
-}
-
-.about h3 {
-  width: min(1100px, 76%);
-  font-size: clamp(2rem, 3vw, 5rem);
-  text-align: center;
-}
-
-.outro {
-  display: grid;
-  place-items: center;
-  background: var(--base-800);
-  color: var(--base-200);
-}
-
-.outro p {
-  margin: 0;
-  font-family: "Barlow Condensed", sans-serif;
-  font-size: clamp(1.8rem, 4vw, 5rem);
-  font-weight: 900;
-  letter-spacing: 0.04em;
 }
 
 p {
@@ -142,30 +111,6 @@ p {
   height: 100%;
 }
 
-.autoplay-hint {
-  position: absolute;
-  left: 50%;
-  bottom: 1.5rem;
-  z-index: 3;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.65rem;
-  transform: translateX(-50%);
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.22em;
-  pointer-events: none;
-}
-
-.playback-line {
-  display: block;
-  width: 1px;
-  height: 40px;
-  background: currentColor;
-  opacity: 0.55;
-}
-
 .webgl-fallback {
   position: absolute;
   inset: 0;
@@ -177,8 +122,7 @@ p {
 }
 
 @media (max-width: 1000px) {
-  .hero-content h1,
-  .about h3 {
+  .hero-content h1 {
     width: 85%;
   }
 }
@@ -192,19 +136,5 @@ p {
     width: 92%;
     font-size: clamp(3rem, 15vw, 5.2rem);
   }
-
-  .about h3 {
-    width: 92%;
-    font-size: clamp(2.4rem, 11vw, 4rem);
-  }
-
-  .autoplay-hint {
-    bottom: 1rem;
-  }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .autoplay-hint {
-    display: none;
-  }
-}

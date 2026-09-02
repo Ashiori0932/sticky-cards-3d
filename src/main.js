@@ -12,9 +12,10 @@ const CARD_HEIGHT = 3.75;
 const CARD_DEPTH = 0.06;
 
 // 卡牌时间参数
-const CARDS_ENTER_END = 100;
-const CARD_FLIP_TRIGGER = 200;
-const CARD_DISMISS_START = 300;
+const CARDS_ENTER_START = 100;
+const CARDS_ENTER_END = 200;
+const CARD_FLIP_TRIGGER = 300;
+const CARD_DISMISS_START = 400;
 const CARD_DISMISS_DURATION = 100;
 const STICKY_CARD_COUNT = 4;
 
@@ -63,18 +64,6 @@ const mapRange = gsap.utils.mapRange;
 
 function unitToProgress(unit) {
   return unit / TOTAL_SEQUENCE_UNITS;
-}
-
-function drawRoundedRect(ctx, x, y, width, height, radius) {
-  const r = Math.min(radius, width / 2, height / 2);
-
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + width, y, x + width, y + height, r);
-  ctx.arcTo(x + width, y + height, x, y + height, r);
-  ctx.arcTo(x, y + height, x, y, r);
-  ctx.arcTo(x, y, x + width, y, r);
-  ctx.closePath();
 }
 
 // ============================================================================
@@ -324,9 +313,6 @@ function createCardTexture({
   // 中央图标
   drawIcon(ctx, icon, 512, 760, 320, foreground);
 
-  // 底部圆角框
-  drawRoundedRect(ctx, 92, 1120, 840, 74, 37);
-
   ctx.strokeStyle = foreground;
   ctx.globalAlpha = 0.24;
   ctx.lineWidth = 2;
@@ -443,11 +429,13 @@ function createCard({
 // ============================================================================
 
 function init() {
+  // 获取页面中的主要 DOM 元素
   const root = document.querySelector("#app");
   const hero = root?.querySelector(".hero");
   const heroHeadline = root?.querySelector(".hero-content h1");
   const container = root?.querySelector(".three-container");
 
+  // 必要元素不存在时直接退出
   if (!root || !hero || !heroHeadline || !container) {
     return;
   }
@@ -459,6 +447,7 @@ function init() {
   let renderer;
 
   try {
+    // 创建支持透明背景和抗锯齿的 WebGL 渲染器
     renderer = new THREE.WebGLRenderer({
       antialias: true,
       alpha: true,
@@ -466,6 +455,7 @@ function init() {
   } catch (error) {
     console.error("WebGL initialization failed:", error);
 
+    // WebGL 不可用时显示提示信息
     const fallback = document.createElement("div");
     fallback.className = "webgl-fallback";
     fallback.textContent =
@@ -479,8 +469,10 @@ function init() {
   // Scene / Camera
   // ==========================================================================
 
+  // 创建 Three.js 场景
   const scene = new THREE.Scene();
 
+  // 创建透视相机
   const camera = new THREE.PerspectiveCamera(
       35,
       1,
@@ -495,6 +487,7 @@ function init() {
   // Renderer 配置
   // ==========================================================================
 
+  // 设置颜色空间、阴影和像素比例
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -508,12 +501,14 @@ function init() {
   // 灯光
   // ==========================================================================
 
+  // 环境光：提供整体基础亮度
   const ambientLight = new THREE.AmbientLight(
       0xffffff,
       1.5
   );
   scene.add(ambientLight);
 
+  // 主光源：提供主要照明和阴影
   const keyLight = new THREE.DirectionalLight(
       0xffffff,
       2
@@ -525,6 +520,7 @@ function init() {
 
   scene.add(keyLight);
 
+  // 补光：减弱背光区域的黑暗程度
   const fillLight = new THREE.DirectionalLight(
       0xdde7ff,
       0.65
@@ -537,14 +533,15 @@ function init() {
   // 卡片组
   // ==========================================================================
 
+  // 所有卡片统一放入一个 Group 中控制
   const cardsGroup = new THREE.Group();
 
   // 初始位于屏幕下方
-  cardsGroup.position.y = -1.5;
+  cardsGroup.position.y = -6;
 
   scene.add(cardsGroup);
 
-  // 最前面的黄色卡片
+  // 创建最前面的封面卡片
   const frontCard = createCard({
     background: "#8e4aaf",
     foreground: "#0f0f0f",
@@ -569,7 +566,7 @@ function init() {
     "moon",
   ];
 
-  // 后方四张卡片
+  // 创建后方四张卡片
   const backCards = labels.map((title, i) => {
     const card = createCard({
       background: cardColors[i],
@@ -581,16 +578,19 @@ function init() {
       z: backCardPositions[i].z,
     });
 
+    // 设置各卡片初始横向位置
     card.position.x = backCardPositions[i].x;
 
-    // 初始显示背面
+    // 初始背面对着相机
     card.rotation.y = -Math.PI;
 
     return card;
   });
 
+  // 将所有卡片加入卡片组
   cardsGroup.add(frontCard, ...backCards);
 
+  // 保存需要在销毁时释放资源的卡片
   const resourceCards = [
     frontCard,
     ...backCards,
@@ -604,10 +604,12 @@ function init() {
   let height = 0;
 
   function updateCardScale() {
+    // 计算卡片组与相机之间的距离
     const distance = Math.abs(
         camera.position.z - cardsGroup.position.z
     );
 
+    // 计算当前相机视野对应的可见高度
     const visibleHeight =
         2 *
         Math.tan(
@@ -618,12 +620,14 @@ function init() {
     const visibleWidth =
         visibleHeight * camera.aspect;
 
+    // 根据屏幕宽高分别计算缩放比例
     const widthScale =
         (visibleWidth * 0.82) / CARD_WIDTH;
 
     const heightScale =
         (visibleHeight * 0.78) / CARD_HEIGHT;
 
+    // 限制卡片缩放范围
     const scale = clamp(
         0.52,
         1,
@@ -634,6 +638,7 @@ function init() {
   }
 
   function handleResize() {
+    // 获取容器当前尺寸
     width =
         container.clientWidth ||
         window.innerWidth;
@@ -642,20 +647,25 @@ function init() {
         container.clientHeight ||
         window.innerHeight;
 
+    // 更新相机宽高比
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
 
+    // 更新渲染尺寸
     renderer.setSize(width, height, false);
 
     renderer.setPixelRatio(
         Math.min(window.devicePixelRatio, 2)
     );
 
+    // 根据新尺寸调整卡片大小
     updateCardScale();
   }
 
+  // 初始化页面尺寸
   handleResize();
 
+  // 页面尺寸变化时重新适配
   window.addEventListener(
       "resize",
       handleResize,
@@ -670,6 +680,7 @@ function init() {
   let isFlipAnimating = false;
   let flipTimeline = null;
 
+  // 将配置值转换为整个动画的 progress 阈值
   const flipThreshold =
       unitToProgress(CARD_FLIP_TRIGGER);
 
@@ -681,6 +692,7 @@ function init() {
       return;
     }
 
+    // 停止并清除当前翻牌动画
     flipTimeline.kill();
     flipTimeline = null;
   }
@@ -690,10 +702,12 @@ function init() {
   // ==========================================================================
 
   function revealBackCards() {
+    // 防止旧 Timeline 与新动画冲突
     killFlipTimeline();
 
     isFlipAnimating = true;
 
+    // 创建带弹性效果的翻牌动画
     flipTimeline = gsap.timeline({
       defaults: {
         duration: 1,
@@ -704,13 +718,14 @@ function init() {
       },
     });
 
-    // 前方黄色卡片翻走
+    // 前方卡片翻到背面
     flipTimeline.to(
         frontCard.rotation,
         { y: Math.PI },
         0
     );
 
+    // 同时将前方卡片移动到后面
     flipTimeline.call(
         () => {
           frontCard.position.z = -0.48;
@@ -736,6 +751,7 @@ function init() {
   // 自动播放状态
   // ==========================================================================
 
+  // progress 从 0 增长到 1，驱动整个动画流程
   const playback = {
     progress: 0,
   };
@@ -749,11 +765,12 @@ function init() {
     // 1. 卡片入场
     // ------------------------------------------------------------------------
 
+    // 将当前总进度映射为卡片入场阶段的 0~1 进度
     const enterProgress = clamp(
         0,
         1,
         mapRange(
-            0,
+            unitToProgress(CARDS_ENTER_START),
             unitToProgress(CARDS_ENTER_END),
             0,
             1,
@@ -761,20 +778,22 @@ function init() {
         )
     );
 
+    // 卡片从屏幕下方向中心移动
     cardsGroup.position.y = mapRange(
         0,
         1,
-        -1.5,
+        -6,
         0,
         enterProgress
     );
 
+    // 标题随卡片入场向上移出屏幕
     gsap.set(heroHeadline, {
       yPercent: mapRange(
           0,
           1,
           0,
-          -100,
+          -500,
           enterProgress
       ),
     });
@@ -783,6 +802,7 @@ function init() {
     // 2. 到达阈值后翻牌
     // ------------------------------------------------------------------------
 
+    // 第一次越过翻牌阈值时执行翻牌动画
     if (
         progress > flipThreshold &&
         !isFlipped
@@ -803,8 +823,10 @@ function init() {
     // ------------------------------------------------------------------------
 
     backCards.forEach((card, i) => {
+      // 当前卡片的抽离顺序
       const dismissOrder = i;
 
+      // 计算当前卡片抽离动画的起止进度
       const dismissStart = unitToProgress(
           CARD_DISMISS_START +
           dismissOrder * CARD_DISMISS_DURATION
@@ -825,6 +847,7 @@ function init() {
         return;
       }
 
+      // 将当前总进度转换为该卡片自身的抽离进度
       const dismissProgress = clamp(
           0,
           1,
@@ -840,11 +863,11 @@ function init() {
       // 向上飞出
       card.position.y = THREE.MathUtils.lerp(
           0,
-          4.5,
+          6,
           dismissProgress
       );
 
-      // 左右轻微甩出
+      // 根据卡片序号交替向左右轻微甩出
       const xOffset =
           i % 2 === 0 ? -0.24 : 0.24;
 
@@ -854,7 +877,7 @@ function init() {
           dismissProgress
       );
 
-      // 抽离过程中增加 Z 轴旋转
+      // 抽离过程中逐渐增加 Z 轴旋转
       if (
           dismissProgress > 0 ||
           (
@@ -868,6 +891,7 @@ function init() {
             dismissProgress
         );
       } else if (!isFlipAnimating) {
+        // 尚未抽离时恢复翻牌后的倾斜角度
         card.rotation.z =
             degToRad(cardFlipTiltAngles[i]);
       }
@@ -879,15 +903,19 @@ function init() {
   // ==========================================================================
 
   function resetSequence() {
+    // 停止可能仍在执行的翻牌动画
     killFlipTimeline();
 
+    // 重置动画状态
     isFlipped = false;
     isFlipAnimating = false;
 
+    // 重置前方卡片
     frontCard.visible = true;
     frontCard.position.z = 0.12;
     frontCard.rotation.set(0, 0, 0);
 
+    // 重置后方四张卡片
     backCards.forEach((card, i) => {
       card.visible = true;
 
@@ -897,7 +925,7 @@ function init() {
           backCardPositions[i].z
       );
 
-      // 背面对着相机
+      // 恢复为背面对着相机
       card.rotation.set(
           0,
           -Math.PI,
@@ -905,16 +933,19 @@ function init() {
       );
     });
 
+    // 从动画起点重新开始
     playback.progress = 0;
     updateSequence(0);
   }
 
+  // 初始化动画状态
   resetSequence();
 
   // ==========================================================================
   // 自动播放 Timeline
   // ==========================================================================
 
+  // 循环推动 progress 从 0 到 1
   const autoplayTimeline = gsap
       .timeline({
         repeat: -1,
@@ -934,6 +965,7 @@ function init() {
   // ==========================================================================
 
   const handleVisibilityChange = () => {
+    // 切换标签页时暂停，回来后继续播放
     if (document.hidden) {
       autoplayTimeline.pause();
     } else {
@@ -958,6 +990,7 @@ function init() {
       return;
     }
 
+    // 渲染当前场景并进入下一帧
     renderer.render(scene, camera);
     frameId = requestAnimationFrame(render);
   }
@@ -969,17 +1002,21 @@ function init() {
   // ==========================================================================
 
   function destroy() {
+    // 防止重复销毁
     if (destroyed) {
       return;
     }
 
     destroyed = true;
 
+    // 停止渲染循环
     cancelAnimationFrame(frameId);
 
+    // 停止 GSAP 动画
     killFlipTimeline();
     autoplayTimeline.kill();
 
+    // 移除事件监听
     document.removeEventListener(
         "visibilitychange",
         handleVisibilityChange
@@ -990,7 +1027,7 @@ function init() {
         handleResize
     );
 
-    // 释放 Geometry / Material / Texture
+    // 释放每张卡片占用的 Three.js GPU 资源
     resourceCards.forEach((card) => {
       const {
         geometry,
@@ -1009,24 +1046,27 @@ function init() {
       );
     });
 
+    // 释放渲染器并移除 Canvas
     renderer.dispose();
     renderer.domElement.remove();
   }
 
-  // 页面关闭时清理
+  // 页面关闭时释放资源
   window.addEventListener(
       "beforeunload",
       destroy,
       { once: true }
   );
 
-  // Vite HMR 时清理旧场景
+  // Vite 热更新时释放旧场景，避免资源重复创建
   if (import.meta.hot) {
     import.meta.hot.dispose(destroy);
   }
 
+  // 返回销毁函数，允许外部主动清理
   return destroy;
 }
+
 
 // ============================================================================
 // 7. 等待字体加载完成后初始化
