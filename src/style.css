@@ -142,7 +142,7 @@ p {
   height: 100%;
 }
 
-.scroll-hint {
+.autoplay-hint {
   position: absolute;
   left: 50%;
   bottom: 1.5rem;
@@ -158,7 +158,7 @@ p {
   pointer-events: none;
 }
 
-.scroll-line {
+.playback-line {
   display: block;
   width: 1px;
   height: 40px;
@@ -198,13 +198,13 @@ p {
     font-size: clamp(2.4rem, 11vw, 4rem);
   }
 
-  .scroll-hint {
+  .autoplay-hint {
     bottom: 1rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .scroll-hint {
+  .autoplay-hint {
     display: none;
   }
 }

@@ -10,7 +10,6 @@
   },
   "dependencies": {
     "gsap": "latest",
-    "lenis": "latest",
     "three": "latest"
   },
   "devDependencies": {

@@ -1,10 +1,6 @@
 import "./style.css";
 import * as THREE from "three";
 import { gsap } from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
-import Lenis from "lenis";
-
-gsap.registerPlugin(ScrollTrigger);
 
 const CARD_WIDTH = 3;
 const CARD_HEIGHT = 3.75;
@@ -15,8 +11,10 @@ const CARD_FLIP_TRIGGER = 200;
 const CARD_DISMISS_START = 300;
 const CARD_DISMISS_DURATION = 100;
 const STICKY_CARD_COUNT = 4;
-const TOTAL_SCROLL_SVH =
+const TOTAL_SEQUENCE_UNITS =
     CARD_DISMISS_START + STICKY_CARD_COUNT * CARD_DISMISS_DURATION;
+const AUTOPLAY_DURATION = 14;
+const AUTOPLAY_REPEAT_DELAY = 1.5;
 
 const cardFlipTiltAngles = [-10, -20, -5, 10];
 const cardDismissTiltAngles = [-50, -60, -45, 50];
@@ -35,8 +33,8 @@ const degToRad = THREE.MathUtils.degToRad;
 const clamp = gsap.utils.clamp;
 const mapRange = gsap.utils.mapRange;
 
-function svhToProgress(svh) {
-  return svh / TOTAL_SCROLL_SVH;
+function unitToProgress(unit) {
+  return unit / TOTAL_SEQUENCE_UNITS;
 }
 
 function drawRoundedRect(ctx, x, y, width, height, radius) {
@@ -222,7 +220,7 @@ function createCardTexture({
 
   ctx.font = '600 25px "DM Sans", sans-serif';
   ctx.textAlign = "center";
-  ctx.fillText("SCROLL-DRIVEN / THREE.JS", 512, 1167);
+  ctx.fillText("AUTOPLAY / THREE.JS", 512, 1167);
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
@@ -293,7 +291,7 @@ function init() {
   const root = document.querySelector("#app");
   const hero = root?.querySelector(".hero");
   const heroHeadline = root?.querySelector(".hero-content h1");
-  const scrollHint = root?.querySelector(".scroll-hint");
+  const autoplayHint = root?.querySelector(".autoplay-hint");
   const container = root?.querySelector(".three-container");
 
   if (!root || !hero || !heroHeadline || !container) return;
@@ -399,22 +397,12 @@ function init() {
   handleResize();
   window.addEventListener("resize", handleResize, { passive: true });
 
-  const lenis = new Lenis();
-  lenis.on("scroll", ScrollTrigger.update);
-
-  const onTick = (time) => {
-    lenis.raf(time * 1000);
-  };
-
-  gsap.ticker.add(onTick);
-  gsap.ticker.lagSmoothing(0);
-
   let isFlipped = false;
   let isFlipAnimating = false;
   let flipTimeline = null;
 
-  const flipThreshold = svhToProgress(CARD_FLIP_TRIGGER);
-  const dismissThreshold = svhToProgress(CARD_DISMISS_START);
+  const flipThreshold = unitToProgress(CARD_FLIP_TRIGGER);
+  const dismissThreshold = unitToProgress(CARD_DISMISS_START);
 
   function killFlipTimeline() {
     if (flipTimeline) {
@@ -454,108 +442,100 @@ function init() {
     });
   }
 
-  function concealBackCards() {
-    killFlipTimeline();
-    isFlipAnimating = true;
+  const playback = { progress: 0 };
 
-    flipTimeline = gsap.timeline({
-      defaults: { duration: 1, ease: "elastic.out(1, 0.5)" },
-      onComplete: () => {
-        isFlipAnimating = false;
-      },
-    });
+  function updateSequence(progress) {
+    const enterProgress = clamp(
+        0,
+        1,
+        mapRange(0, unitToProgress(CARDS_ENTER_END), 0, 1, progress)
+    );
 
-    frontCard.visible = false;
-    frontCard.rotation.y = Math.PI / 2;
+    cardsGroup.position.y = mapRange(0, 1, -1.5, 0, enterProgress);
+    gsap.set(heroHeadline, { yPercent: mapRange(0, 1, 0, -100, enterProgress) });
+    if (autoplayHint) {
+      gsap.set(autoplayHint, { autoAlpha: 1 - enterProgress });
+    }
 
-    // 返回时先收起后方卡片，再从侧面把前卡翻回正面。
-    flipTimeline.call(() => {
-      frontCard.visible = true;
-    }, [], 0.18);
-    flipTimeline.to(frontCard.rotation, { y: 0 }, 0.18);
+    if (progress > flipThreshold && !isFlipped) {
+      revealBackCards();
+      isFlipped = true;
+    }
 
-    backCards.forEach((card) => {
-      flipTimeline.to(card.rotation, { y: -Math.PI, z: 0 }, 0);
+    backCards.forEach((card, i) => {
+        // i=0 是视觉最上层，因此直接按数组顺序依次抽出。
+        const dismissOrder = i;
+        const dismissStart = unitToProgress(
+            CARD_DISMISS_START + dismissOrder * CARD_DISMISS_DURATION
+        );
+        const dismissEnd = unitToProgress(
+            CARD_DISMISS_START + (dismissOrder + 1) * CARD_DISMISS_DURATION
+        );
+
+        if (progress <= flipThreshold) {
+          card.position.y = 0;
+          card.position.x = backCardPositions[i].x;
+          return;
+        }
+
+        const dismissProgress = clamp(
+            0,
+            1,
+            mapRange(dismissStart, dismissEnd, 0, 1, progress)
+        );
+
+        card.position.y = THREE.MathUtils.lerp(0, 4.5, dismissProgress);
+        card.position.x = THREE.MathUtils.lerp(
+            backCardPositions[i].x,
+            backCardPositions[i].x + (i % 2 === 0 ? -0.24 : 0.24),
+            dismissProgress
+        );
+
+        if (dismissProgress > 0 || (!isFlipAnimating && progress >= dismissThreshold)) {
+          card.rotation.z = THREE.MathUtils.lerp(
+              degToRad(cardFlipTiltAngles[i]),
+              degToRad(cardDismissTiltAngles[i]),
+              dismissProgress
+          );
+        } else if (!isFlipAnimating) {
+          card.rotation.z = degToRad(cardFlipTiltAngles[i]);
+        }
     });
   }
 
-  const totalScroll = () => window.innerHeight * (TOTAL_SCROLL_SVH / 100);
-
-  const ctx = gsap.context(() => {
-    const scrollTrigger = ScrollTrigger.create({
-      trigger: hero,
-      start: "top top",
-      end: () => `+=${totalScroll()}`,
-      pin: true,
-      pinSpacing: true,
-      scrub: true,
-      invalidateOnRefresh: true,
-
-      onUpdate: ({ progress }) => {
-        const enterProgress = clamp(
-            0,
-            1,
-            mapRange(0, svhToProgress(CARDS_ENTER_END), 0, 1, progress)
-        );
-
-        cardsGroup.position.y = mapRange(0, 1, -1.5, 0, enterProgress);
-        gsap.set(heroHeadline, { yPercent: mapRange(0, 1, 0, -100, enterProgress) });
-        if (scrollHint) {
-          gsap.set(scrollHint, { autoAlpha: 1 - enterProgress });
-        }
-
-        if (progress > flipThreshold && !isFlipped) {
-          revealBackCards();
-          isFlipped = true;
-        } else if (progress <= flipThreshold && isFlipped) {
-          concealBackCards();
-          isFlipped = false;
-        }
-
-        backCards.forEach((card, i) => {
-          // i=0 是视觉最上层，因此直接按数组顺序依次抽出。
-          const dismissOrder = i;
-          const dismissStart = svhToProgress(
-              CARD_DISMISS_START + dismissOrder * CARD_DISMISS_DURATION
-          );
-          const dismissEnd = svhToProgress(
-              CARD_DISMISS_START + (dismissOrder + 1) * CARD_DISMISS_DURATION
-          );
-
-          if (progress <= flipThreshold) {
-            card.position.y = 0;
-            card.position.x = backCardPositions[i].x;
-            return;
-          }
-
-          const dismissProgress = clamp(
-              0,
-              1,
-              mapRange(dismissStart, dismissEnd, 0, 1, progress)
-          );
-
-          card.position.y = THREE.MathUtils.lerp(0, 4.5, dismissProgress);
-          card.position.x = THREE.MathUtils.lerp(
-              backCardPositions[i].x,
-              backCardPositions[i].x + (i % 2 === 0 ? -0.24 : 0.24),
-              dismissProgress
-          );
-
-          if (dismissProgress > 0 || (!isFlipAnimating && progress >= dismissThreshold)) {
-            card.rotation.z = THREE.MathUtils.lerp(
-                degToRad(cardFlipTiltAngles[i]),
-                degToRad(cardDismissTiltAngles[i]),
-                dismissProgress
-            );
-          } else if (!isFlipAnimating) {
-            card.rotation.z = degToRad(cardFlipTiltAngles[i]);
-          }
-        });
-      },
+  function resetSequence() {
+    killFlipTimeline();
+    isFlipped = false;
+    isFlipAnimating = false;
+    frontCard.visible = true;
+    frontCard.rotation.set(0, 0, 0);
+    backCards.forEach((card, i) => {
+      card.visible = true;
+      card.position.set(backCardPositions[i].x, 0, backCardPositions[i].z);
+      card.rotation.set(0, -Math.PI, 0);
     });
+    playback.progress = 0;
+    updateSequence(0);
+  }
 
-    root.__stickyCardsScrollTrigger = scrollTrigger;
-  }, root);
+  resetSequence();
+
+  const autoplayTimeline = gsap.timeline({
+    repeat: -1,
+    repeatDelay: AUTOPLAY_REPEAT_DELAY,
+    onRepeat: resetSequence,
+  }).to(playback, {
+    progress: 1,
+    duration: AUTOPLAY_DURATION,
+    ease: "none",
+    onUpdate: () => updateSequence(playback.progress),
+  });
+
+  const handleVisibilityChange = () => {
+    if (document.hidden) autoplayTimeline.pause();
+    else autoplayTimeline.resume();
+  };
+  document.addEventListener("visibilitychange", handleVisibilityChange);
 
   let frameId = 0;
   let destroyed = false;
@@ -567,7 +547,6 @@ function init() {
   }
 
   render();
-  ScrollTrigger.refresh();
 
   function destroy() {
     if (destroyed) return;
@@ -575,15 +554,8 @@ function init() {
 
     cancelAnimationFrame(frameId);
     killFlipTimeline();
-    ctx.revert();
-
-    if (root.__stickyCardsScrollTrigger) {
-      root.__stickyCardsScrollTrigger.kill();
-      delete root.__stickyCardsScrollTrigger;
-    }
-
-    gsap.ticker.remove(onTick);
-    lenis.destroy();
+    autoplayTimeline.kill();
+    document.removeEventListener("visibilitychange", handleVisibilityChange);
     window.removeEventListener("resize", handleResize);
 
     resourceCards.forEach((card) => {
