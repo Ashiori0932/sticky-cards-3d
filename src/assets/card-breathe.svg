@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000">
+<rect width="800" height="1000" fill="#f0fd00"/>
+<defs><pattern id="dots" width="40" height="40" patternUnits="userSpaceOnUse"><circle cx="4" cy="4" r="1.5" fill="#101010" opacity=".13"/></pattern></defs>
+<rect width="800" height="1000" fill="url(#dots)"/>
+<text x="72" y="195" fill="#101010" font-family="Arial Narrow,Arial,sans-serif" font-size="102" font-weight="900">BREATHE</text>
+<text x="730" y="80" fill="#101010" font-family="Arial,sans-serif" font-size="30" font-weight="700" text-anchor="end">01</text>
+<text x="76" y="242" fill="#101010" font-family="Arial,sans-serif" font-size="25"></text>
+<path d="M72 290H728" stroke="#101010" stroke-width="2" opacity=".32"/>
+<text x="400" y="660" fill="#101010" font-family="Arial,sans-serif" font-size="220" text-anchor="middle">❧</text>
+<text x="400" y="930" fill="#101010" font-family="Arial,sans-serif" font-size="19" font-weight="700" text-anchor="middle" letter-spacing="3">AUTOPLAY / THREE.JS</text>
+</svg>
