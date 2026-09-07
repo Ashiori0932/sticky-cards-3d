@@ -1,6 +1,12 @@
 import * as THREE from "three";
 import { gsap } from "gsap";
 import { CARD_HEIGHT, CARD_WIDTH, createCard, disposeCard } from "./card.js";
+import cardBackImage from "./assets/card-back.svg";
+import breatheImage from "./assets/card-breathe.svg";
+import coverImage from "./assets/card-cover.svg";
+import moveImage from "./assets/card-move.svg";
+import noticeImage from "./assets/card-notice.svg";
+import restImage from "./assets/card-rest.svg";
 
 export const backCardPositions = [
   { x: -0.05, z: -0.08 },
@@ -46,17 +52,19 @@ export function createScene(container) {
   cardsGroup.position.y = -6;
   scene.add(cardsGroup);
   const frontCard = createCard({
-    background: "#8e4aaf", foreground: "#0f0f0f", title: "FIRST FRAME",
-    subtitle: "Start here", index: "00", icon: "chevron", z: 0.12,
+    frontImage: coverImage,
+    backImage: cardBackImage,
+    sideColor: "#8e4aaf",
+    z: 0.12,
   });
-  const labels = ["BREATHE", "MOVE", "NOTICE", "REST"];
-  const icons = ["leaf", "footsteps", "eye", "moon"];
+  const frontImages = [breatheImage, moveImage, noticeImage, restImage];
   const colors = ["#f0fd00", "#dfebe0", "#8c26fd", "#9bfd40"];
-  const textColors = ["#0f0f0f", "#0f0f0f", "#ffffff", "#0f0f0f"];
-  const backCards = labels.map((title, index) => {
+  const backCards = frontImages.map((frontImage, index) => {
     const card = createCard({
-      background: colors[index], foreground: textColors[index], title, subtitle: "",
-      index: String(index + 1).padStart(2, "0"), icon: icons[index], z: backCardPositions[index].z,
+      frontImage,
+      backImage: cardBackImage,
+      sideColor: colors[index],
+      z: backCardPositions[index].z,
     });
     card.position.x = backCardPositions[index].x;
     card.rotation.y = -Math.PI;

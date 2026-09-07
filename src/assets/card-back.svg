@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="1000" viewBox="0 0 800 1000">
+<defs><pattern id="lines" width="52" height="52" patternUnits="userSpaceOnUse" patternTransform="rotate(-22)"><path d="M0 0V52" stroke="#111" stroke-width="2" opacity=".08"/></pattern></defs>
+<rect width="800" height="1000" fill="#eee9e1"/><rect width="800" height="1000" fill="url(#lines)"/>
+<text x="400" y="490" fill="#111" font-family="Arial Narrow,Arial,sans-serif" font-size="76" font-weight="900" text-anchor="middle">STICKY / 3D</text>
+<text x="400" y="545" fill="#111" font-family="Arial,sans-serif" font-size="20" text-anchor="middle" letter-spacing="2">TURN THE CARD · FOLLOW THE MOTION</text>
+</svg>
