@@ -11,7 +11,13 @@ const MOTION = {
   dismissStart: 3.9,
   dismissDuration: 0.85,
   dismissStagger: 0.6,
-  coverExitDuration: 0.45,
+  cameraRushDuration: 0.48,
+  cameraSettleDuration: 0.18,
+  targetHoldDuration: 3,
+  cameraRushZ: 4.85,
+  cameraSettleZ: 5.1,
+  impactDuration: 0.46,
+  impactStagger: 0.035,
   repeatDelay: 1.5,
   enterEase: "power2.out",
   flipEase: "sine.inOut",
@@ -21,16 +27,23 @@ const cardFlipTiltAngles = [-10, -20, -5, 10];
 const cardDismissTiltAngles = [-50, -60, -45, 50];
 const degToRad = THREE.MathUtils.degToRad;
 
-export function createAnimation({ camera, cardsGroup, frontCard, backCards, heroHeadline }) {
+export function createAnimation({ camera, cardsGroup, frontCard, backCards, impactLines, heroHeadline }) {
   function resetSequence() {
     cardsGroup.position.y = -6;
     frontCard.visible = true;
     frontCard.position.z = 0.12;
     frontCard.rotation.set(0, 0, 0);
+    camera.position.set(0, 0, 8);
+    camera.lookAt(0, 0, 0);
     backCards.forEach((card, index) => {
       card.visible = true;
       card.position.set(backCardPositions[index].x, 0, backCardPositions[index].z);
       card.rotation.set(0, -Math.PI, 0);
+    });
+    impactLines.visible = false;
+    impactLines.children.forEach((line) => {
+      line.position.z = -4;
+      line.scale.setScalar(0.18);
     });
     gsap.set(heroHeadline, { yPercent: 0 });
   }
@@ -85,13 +98,34 @@ export function createAnimation({ camera, cardsGroup, frontCard, backCards, hero
     }, dismissStart);
   });
 
-  // 最后一张离场后带走剩余封面，使循环复位发生在画面外。
-  const coverExitStart = MOTION.dismissStart
+  // 其他卡牌离场后，封面留在原处成为最终目标；镜头拉近并额外展示 3 秒。
+  const finalCardRevealStart = MOTION.dismissStart
     + Math.max(0, backCards.length - 1) * MOTION.dismissStagger
     + MOTION.dismissDuration;
-  timeline.fromTo(cardsGroup.position, { y: 0 }, {
-    y: 6, duration: MOTION.coverExitDuration, ease: MOTION.dismissEase,
-  }, coverExitStart);
+  timeline.set(impactLines, { visible: true }, finalCardRevealStart);
+  timeline.to(impactLines.children.map((line) => line.position), {
+    z: (index) => impactLines.children[index].userData.finalZ,
+    duration: MOTION.impactDuration,
+    stagger: MOTION.impactStagger,
+    ease: "expo.out",
+  }, finalCardRevealStart);
+  timeline.to(impactLines.children.map((line) => line.scale), {
+    x: 1, y: 1, z: 1,
+    duration: MOTION.impactDuration,
+    stagger: MOTION.impactStagger,
+    ease: "back.out(2.2)",
+  }, finalCardRevealStart);
+  timeline.to(camera.position, {
+    z: MOTION.cameraRushZ,
+    duration: MOTION.cameraRushDuration,
+    ease: "expo.in",
+  }, finalCardRevealStart);
+  timeline.to(camera.position, {
+    z: MOTION.cameraSettleZ,
+    duration: MOTION.cameraSettleDuration,
+    ease: "power2.out",
+  }, finalCardRevealStart + MOTION.cameraRushDuration);
+  timeline.to({}, { duration: MOTION.targetHoldDuration });
 
   // 同一时间轴统一暂停翻牌与位移，也处理初始化时标签页已隐藏的情况。
   const handleVisibilityChange = () => timeline.paused(document.hidden);
