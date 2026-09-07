@@ -7,6 +7,7 @@ import coverImage from "./assets/card-cover.svg";
 import moveImage from "./assets/card-move.svg";
 import noticeImage from "./assets/card-notice.svg";
 import restImage from "./assets/card-rest.svg";
+import { createImpactLines, disposeImpactLines } from "./impact-lines.js";
 
 export const backCardPositions = [
   { x: -0.05, z: -0.08 },
@@ -76,6 +77,8 @@ export function createScene(container) {
   });
   const resourceCards = [frontCard, ...backCards];
   cardsGroup.add(...resourceCards);
+  const impactLines = createImpactLines();
+  cardsGroup.add(impactLines);
 
   handleResize = function resizeScene() {
     const width = container.clientWidth || window.innerWidth;
@@ -109,9 +112,10 @@ export function createScene(container) {
     cancelAnimationFrame(frameId);
     window.removeEventListener("resize", handleResize);
     resourceCards.forEach(disposeCard);
+    disposeImpactLines(impactLines);
     renderer.dispose();
     renderer.domElement.remove();
   }
 
-  return { scene, camera, cardsGroup, frontCard, backCards, destroy };
+  return { scene, camera, cardsGroup, frontCard, backCards, impactLines, destroy };
 }
