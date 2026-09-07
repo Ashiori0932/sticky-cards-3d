@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { gsap } from "gsap";
-import { CARD_HEIGHT, CARD_WIDTH, createCard, disposeCard } from "./card.js";
+import { CARD_HEIGHT, createCard, disposeCard } from "./card.js";
 import cardBackImage from "./assets/card-back.svg";
 import breatheImage from "./assets/card-breathe.svg";
 import coverImage from "./assets/card-cover.svg";
@@ -51,11 +51,14 @@ export function createScene(container) {
   const cardsGroup = new THREE.Group();
   cardsGroup.position.y = -6;
   scene.add(cardsGroup);
+  let handleResize = () => {};
+  const cardOptions = { onResize: () => handleResize() };
   const frontCard = createCard({
     frontImage: coverImage,
     backImage: cardBackImage,
     sideColor: "#8e4aaf",
     z: 0.12,
+    ...cardOptions,
   });
   const frontImages = [breatheImage, moveImage, noticeImage, restImage];
   const colors = ["#f0fd00", "#dfebe0", "#8c26fd", "#9bfd40"];
@@ -65,6 +68,7 @@ export function createScene(container) {
       backImage: cardBackImage,
       sideColor: colors[index],
       z: backCardPositions[index].z,
+      ...cardOptions,
     });
     card.position.x = backCardPositions[index].x;
     card.rotation.y = -Math.PI;
@@ -73,7 +77,7 @@ export function createScene(container) {
   const resourceCards = [frontCard, ...backCards];
   cardsGroup.add(...resourceCards);
 
-  function handleResize() {
+  handleResize = function resizeScene() {
     const width = container.clientWidth || window.innerWidth;
     const height = container.clientHeight || window.innerHeight;
     camera.aspect = width / height;
@@ -83,9 +87,10 @@ export function createScene(container) {
     const distance = Math.abs(camera.position.z - cardsGroup.position.z);
     const visibleHeight = 2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * distance;
     const visibleWidth = visibleHeight * camera.aspect;
-    const scale = gsap.utils.clamp(0.52, 1, Math.min((visibleWidth * 0.82) / CARD_WIDTH, (visibleHeight * 0.78) / CARD_HEIGHT, 1));
+    const widestCard = Math.max(...resourceCards.map((card) => card.userData.cardWidth));
+    const scale = gsap.utils.clamp(0.52, 1, Math.min((visibleWidth * 0.82) / widestCard, (visibleHeight * 0.78) / CARD_HEIGHT, 1));
     cardsGroup.scale.setScalar(scale);
-  }
+  };
   handleResize();
   window.addEventListener("resize", handleResize, { passive: true });
 
