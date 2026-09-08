@@ -17,7 +17,7 @@ const MOTION = {
   cameraRushZ: 4.85,
   cameraSettleZ: 5.1,
   impactDuration: 0.46,
-  impactStagger: 0.035,
+  impactFadeDuration: 0.2,
   repeatDelay: 1.5,
   enterEase: "power2.out",
   flipEase: "sine.inOut",
@@ -42,8 +42,9 @@ export function createAnimation({ camera, cardsGroup, frontCard, backCards, impa
     });
     impactLines.visible = false;
     impactLines.children.forEach((line) => {
-      line.position.z = -4;
-      line.scale.setScalar(0.18);
+      line.position.set(line.userData.startX, line.userData.startY, 0);
+      line.scale.set(line.userData.length * 0.04, line.userData.width * 0.62, 1);
+      line.userData.materials.forEach((material) => { material.opacity = 0; });
     });
     gsap.set(heroHeadline, { yPercent: 0 });
   }
@@ -103,18 +104,33 @@ export function createAnimation({ camera, cardsGroup, frontCard, backCards, impa
     + Math.max(0, backCards.length - 1) * MOTION.dismissStagger
     + MOTION.dismissDuration;
   timeline.set(impactLines, { visible: true }, finalCardRevealStart);
-  timeline.to(impactLines.children.map((line) => line.position), {
-    z: (index) => impactLines.children[index].userData.finalZ,
-    duration: MOTION.impactDuration,
-    stagger: MOTION.impactStagger,
-    ease: "expo.out",
-  }, finalCardRevealStart);
-  timeline.to(impactLines.children.map((line) => line.scale), {
-    x: 1, y: 1, z: 1,
-    duration: MOTION.impactDuration,
-    stagger: MOTION.impactStagger,
-    ease: "back.out(2.2)",
-  }, finalCardRevealStart);
+  impactLines.children.forEach((line) => {
+    const start = finalCardRevealStart + line.userData.delay;
+    const cos = Math.cos(line.userData.angle);
+    const sin = Math.sin(line.userData.angle);
+    timeline.to(line.userData.materials, {
+      opacity: 0.92,
+      duration: 0.1,
+      ease: "power1.out",
+    }, start);
+    timeline.to(line.scale, {
+      x: line.userData.length,
+      y: line.userData.width,
+      duration: MOTION.impactDuration,
+      ease: "power4.in",
+    }, start);
+    timeline.to(line.position, {
+      x: line.userData.startX + cos * 0.2,
+      y: line.userData.startY + sin * 0.2,
+      duration: MOTION.impactFadeDuration,
+      ease: "power2.in",
+    }, start + 0.34);
+    timeline.to(line.userData.materials, {
+      opacity: 0,
+      duration: MOTION.impactFadeDuration,
+      ease: "power3.in",
+    }, start + 0.34);
+  });
   timeline.to(camera.position, {
     z: MOTION.cameraRushZ,
     duration: MOTION.cameraRushDuration,
@@ -125,6 +141,7 @@ export function createAnimation({ camera, cardsGroup, frontCard, backCards, impa
     duration: MOTION.cameraSettleDuration,
     ease: "power2.out",
   }, finalCardRevealStart + MOTION.cameraRushDuration);
+  timeline.set(impactLines, { visible: false }, finalCardRevealStart + 0.68);
   timeline.to({}, { duration: MOTION.targetHoldDuration });
 
   // 同一时间轴统一暂停翻牌与位移，也处理初始化时标签页已隐藏的情况。
