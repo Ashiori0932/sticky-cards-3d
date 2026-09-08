@@ -7,7 +7,12 @@ import coverImage from "./assets/card-cover.svg";
 import moveImage from "./assets/card-move.svg";
 import noticeImage from "./assets/card-notice.svg";
 import restImage from "./assets/card-rest.svg";
-import { createImpactLines, disposeImpactLines } from "./impact-lines.js";
+import {
+  createImpactLines,
+  disposeImpactLines,
+  resizeImpactLines,
+  syncImpactLinesToCamera,
+} from "./impact-lines.js";
 
 export const backCardPositions = [
   { x: -0.05, z: -0.08 },
@@ -78,7 +83,7 @@ export function createScene(container) {
   const resourceCards = [frontCard, ...backCards];
   cardsGroup.add(...resourceCards);
   const impactLines = createImpactLines();
-  cardsGroup.add(impactLines);
+  scene.add(impactLines);
 
   handleResize = function resizeScene() {
     const width = container.clientWidth || window.innerWidth;
@@ -93,6 +98,7 @@ export function createScene(container) {
     const widestCard = Math.max(...resourceCards.map((card) => card.userData.cardWidth));
     const scale = gsap.utils.clamp(0.52, 1, Math.min((visibleWidth * 0.82) / widestCard, (visibleHeight * 0.78) / CARD_HEIGHT, 1));
     cardsGroup.scale.setScalar(scale);
+    resizeImpactLines(impactLines, camera, width, height);
   };
   handleResize();
   window.addEventListener("resize", handleResize, { passive: true });
@@ -101,6 +107,7 @@ export function createScene(container) {
   let destroyed = false;
   function render() {
     if (destroyed) return;
+    syncImpactLinesToCamera(impactLines, camera);
     renderer.render(scene, camera);
     frameId = requestAnimationFrame(render);
   }

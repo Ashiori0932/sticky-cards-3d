@@ -26,8 +26,8 @@ npm run build
 - Four cards accelerate upward in order, with overlapping exits on different cards.
 - The cover moves behind the stack near the edge-on part of the flip, remains in
   place after the other cards exit, and becomes the target of a camera push-in.
-- Eight varied, tapered black-and-white Three.js impact lines rush forward from
-  depth and frame the final card without covering its artwork.
+- Sixteen varied black-and-white radial speed lines briefly streak toward the
+  final card's vanishing point as an independent, camera-aligned scene layer.
 - GSAP writes directly to Three.js object properties; no CSS transforms are used for cards.
 - Playback pauses while the tab is hidden and resumes when it becomes visible.
 - Resize, HMR, WebGL fallback, and GPU resource cleanup are included.
@@ -41,7 +41,8 @@ tweens. `dismissStagger` controls the interval between cards; values below
 `dismissDuration` create overlapping exits. The two-stage `cameraRushDuration`
 and `cameraSettleDuration` values control the final punch-in, while
 `targetHoldDuration` adds display time without shortening any earlier phase.
-Impact-line dimensions and placement are centralized in `src/impact-lines.js`.
+Impact-line angles, dimensions, placement, and screen-space layout are centralized
+in `src/impact-lines.js`.
 
 ## Use your own card images
 
